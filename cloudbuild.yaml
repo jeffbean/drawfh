@@ -1,0 +1,4 @@
+steps:
+  # Build
+  - name: 'gcr.io/cloud-builders/bazel'
+    args: ['build', '//:drawfh', '--verbose_failures']
