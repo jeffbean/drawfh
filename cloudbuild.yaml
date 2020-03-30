@@ -1,4 +1,11 @@
 steps:
+  # ensure deps are up to date
+  - name: 'gcr.io/cloud-builders/bazel'
+    args: ['run', '//:gazelle', '--', 'update-repos', '-from_file=go.mod']
+  # ensure the repo is up to date
+  - name: 'gcr.io/cloud-builders/git'
+    env: ['GIT_DISCOVERY_ACROSS_FILESYSTEM=1']
+    args: ['diff-index', '--exit-code', 'HEAD']
   # Build
   - name: 'gcr.io/cloud-builders/bazel'
     args: ['build', '//:drawfh', '--verbose_failures']
