@@ -10,7 +10,7 @@ steps:
     args: ['build', '//:drawfh', '--verbose_failures']
   # Test
   - name: 'gcr.io/cloud-builders/bazel'
-    args: ['test'. '//...']
+    args: ['test', '//...']
   # Deploy
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['app', 'deploy']
