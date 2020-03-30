@@ -1,4 +1,17 @@
 steps:
+  # ensure deps are up to date
+  - name: 'gcr.io/cloud-builders/bazel'
+    args: ['run', '//:gazelle', '--', 'update-repos', '-from_file=go.mod']
+  # ensure the repo is up to date
+  - name: 'busybox'
+    args: ['bash', '.build/check-repo.sh']
   # Build
   - name: 'gcr.io/cloud-builders/bazel'
     args: ['build', '//:drawfh', '--verbose_failures']
+  # Test
+  - name: 'gcr.io/cloud-builders/bazel'
+    args: ['test'. '//...']
+  # Deploy
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: ['app', 'deploy']
+    timeout: '1600s'
