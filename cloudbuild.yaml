@@ -1,7 +1,9 @@
 steps:
-  # Build
-  - name: 'gcr.io/cloud-builders/bazel'
-    args: ['build', '//:drawfh', '--verbose_failures']
+  # Build the module.
+  - name: 'golang'
+    args: ['go', 'build', './...']
+    env: ['GO111MODULE=on']
   # Test
-  - name: 'gcr.io/cloud-builders/bazel'
-    args: ['test', '//...']
+  - name: 'golang'
+    args: ['go', 'test', './...']
+    env: ['GO111MODULE=on']

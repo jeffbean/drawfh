@@ -11,7 +11,6 @@ type Room struct {
 	// Players
 
 	// game state: created, start, choosing, guessing, finished
-	//
 
 	// Drawing
 	// current drawing... how to represent this...
@@ -30,6 +29,8 @@ type Room struct {
 	unregister chan *client.Player
 }
 
+// NewRoom creates a game room where players will join and leave a game.
+// the room will remain running as long as at least one client is connected.
 func NewRoom(creator string) (Room, error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
@@ -55,8 +56,8 @@ func (r *Room) PlayerLeave(player *client.Player) {
 
 // Close will close the room and all tear down the websockets.
 func (r *Room) Close() {
-	for client := range r.clients {
-		client.Stop()
+	for c := range r.clients {
+		c.Stop()
 	}
 	close(r.broadcast)
 }
@@ -65,16 +66,16 @@ func (r *Room) Close() {
 func (r *Room) Run() {
 	for {
 		select {
-		case client := <-r.register:
-			r.clients[client] = struct{}{}
-		case client := <-r.unregister:
-			if _, ok := r.clients[client]; ok {
-				delete(r.clients, client)
-				client.Stop()
+		case c := <-r.register:
+			r.clients[c] = struct{}{}
+		case c := <-r.unregister:
+			if _, ok := r.clients[c]; ok {
+				delete(r.clients, c)
+				c.Stop()
 			}
 		case message := <-r.broadcast:
-			for client := range r.clients {
-				client.Send([]byte(message))
+			for c := range r.clients {
+				c.Send(message)
 			}
 		}
 	}
