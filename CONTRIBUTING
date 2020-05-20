@@ -1,0 +1,9 @@
+# Contributing
+
+## build and test
+
+The master branch will have many gates to ensure the code is building and covered properly. To get to master we expect to do all PR based changes into master.
+
+## Local Dev
+
+We can run the local server and clients on your system without a remote server. To do this we have a connivent script.

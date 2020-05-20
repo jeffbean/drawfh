@@ -1,0 +1,13 @@
+steps:
+  # Build the module.
+  - name: 'golang'
+    args: ['go', 'build', './...']
+    env: ['GO111MODULE=on']
+  # Test
+  - name: 'golang'
+    args: ['go', 'test', './...']
+    env: ['GO111MODULE=on']
+  # Deploy - no promote, this is intended to only by run on tag pushes. (releases)
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: ['app', 'deploy', '--no-promote', '--version', '$TAG_NAME']
+    timeout: '600s'
