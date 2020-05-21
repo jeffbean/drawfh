@@ -1,6 +1,15 @@
 runtime: go112
 handlers:
-  - url: /.*
-    script: auto
-    secure: always
-    redirect_http_response_code: 301
+- url: /
+  static_files: www/index.html
+  upload: www/index.html
+
+- url: /static/(.*)
+  static_files: www/\1
+  upload: www/(.*)
+
+- url: /.*
+  script: auto
+  secure: always
+  redirect_http_response_code: 301
+

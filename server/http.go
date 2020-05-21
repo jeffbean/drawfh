@@ -12,9 +12,6 @@ func NewServer(addr string) *http.Server {
 	g := game.NewGameServer()
 	router := mux.NewRouter()
 
-	// Web routes.
-	router.HandleFunc("/", g.HomeHandler).Methods("GET")
-
 	// TODO: a page to create a room via a html form, that uses another route to post the form.
 	router.HandleFunc("/room/create", g.RoomCreate).Methods("POST", "GET")
 
@@ -25,7 +22,7 @@ func NewServer(addr string) *http.Server {
 	router.HandleFunc("/room/{id}/delete", g.RoomDelete).Methods("POST")
 
 	return &http.Server{
-		Addr: addr,
+		Addr:         addr,
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
