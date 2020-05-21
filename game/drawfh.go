@@ -98,7 +98,7 @@ func (d *DrawGame) RoomJoin(w http.ResponseWriter, r *http.Request) {
 	}
 	currentUser := client.NewPlayer("testing-user")
 	room.PlayerJoin(currentUser)
-	io.WriteString(w, fmt.Sprintf("player %q joined room %v", currentUser, room.ID))
+	io.WriteString(w, fmt.Sprintf("player %v joined room %v", currentUser, room.ID))
 }
 
 func (d *DrawGame) RoomList(w http.ResponseWriter, _ *http.Request) {
