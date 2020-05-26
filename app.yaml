@@ -1,4 +1,6 @@
 runtime: go112
+automatic_scaling:
+  max_num_instances: 1
 handlers:
 - url: /
   static_files: www/index.html

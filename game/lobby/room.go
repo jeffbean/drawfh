@@ -2,12 +2,11 @@ package lobby
 
 import (
 	"github.com/google/uuid"
-	"github.com/jeffbean/drawfh/game/client"
 )
 
 // The Room is a single instance of multiple players and a lobby
 type Room struct {
-	ID string `json:"id"` // unique id per game lobby
+	ID string `json:"id"` // unique id per game
 	// Players
 
 	// game state: created, start, choosing, guessing, finished
@@ -17,16 +16,18 @@ type Room struct {
 
 	// Connections
 	// Registered clients.
-	clients map[*client.Player]struct{}
+	clients map[*Player]struct{}
 
 	// Inbound messages from the clients.
 	broadcast chan []byte
 
 	// Register requests from the clients.
-	register chan *client.Player
+	register chan *Player
 
 	// Unregister requests from clients.
-	unregistered chan *client.Player
+	unregistered chan *Player
+
+	done chan struct{}
 }
 
 // NewRoom creates a game room where players will join and leave a game.
@@ -39,20 +40,21 @@ func NewRoom(creator string) (Room, error) {
 	}
 	return Room{
 		ID:           id.String(),
-		clients:      make(map[*client.Player]struct{}),
+		clients:      make(map[*Player]struct{}),
 		broadcast:    make(chan []byte),
-		register:     make(chan *client.Player),
-		unregistered: make(chan *client.Player),
+		register:     make(chan *Player),
+		unregistered: make(chan *Player),
+		done:         make(chan struct{}, 1),
 	}, nil
 }
 
 // PlayerJoin will join the player to the room.
-func (r *Room) PlayerJoin(player *client.Player) {
+func (r *Room) PlayerJoin(player *Player) {
 	r.register <- player
 }
 
 // PlayerLeave will remove the player from the room.
-func (r *Room) PlayerLeave(player *client.Player) {
+func (r *Room) PlayerLeave(player *Player) {
 	r.unregistered <- player
 }
 
@@ -62,22 +64,30 @@ func (r *Room) Close() {
 		c.Stop()
 	}
 	close(r.broadcast)
+	close(r.done)
 }
 
-// Run starts the room process. Each room will be its own loop.
-func (r *Room) Run() {
+// Start starts the room process. Each room will be its own loop.
+func (r *Room) Start() {
 	for {
 		select {
+		case <-r.done:
+			return
 		case c := <-r.register:
 			r.clients[c] = struct{}{}
 		case c := <-r.unregistered:
 			if _, ok := r.clients[c]; ok {
-				delete(r.clients, c)
 				c.Stop()
+				delete(r.clients, c)
 			}
 		case message := <-r.broadcast:
 			for c := range r.clients {
-				c.Send(message)
+				select {
+				case c.send <- message:
+				default:
+					c.Stop()
+					delete(r.clients, c)
+				}
 			}
 		}
 	}

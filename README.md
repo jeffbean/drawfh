@@ -1,4 +1,4 @@
-# DraWFH
+# DrawFH
 
 Draw from home, online. This is a online drawing game intended to have fun with friends and colleagues.
 
@@ -107,6 +107,8 @@ If you have a curated list of words and some settings you enjoy.
 4. A sharable game link is created.
 5. Any player anonymous or authenticated can then join the game.
 6. Game start.
+
+### Notes
 
 ## Credits
 

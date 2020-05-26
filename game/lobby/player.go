@@ -1,4 +1,4 @@
-package client
+package lobby
 
 import (
 	"bytes"
@@ -22,6 +22,7 @@ const (
 
 // Player is the individual client sending and receiving the websocket data.
 type Player struct {
+	room *Room
 	conn *websocket.Conn
 
 	pingTicker *time.Ticker
@@ -46,19 +47,21 @@ func NewPlayer(name string) *Player {
 
 // Stop will send an optional last message and tear down the player.
 func (c *Player) Stop() {
-	close(c.send)
+	close(c.quit)
 	c.pingTicker.Stop()
-	c.conn.Close()
+	// if the player has not joined any rooms, the conn will be nil
+	if c.conn != nil {
+		c.conn.Close()
+	}
 }
 
-// Send is sending data to the player. in our case this will
-// be some json payload that javascript will be using to update
-// the drawing canvas.
-func (c *Player) Send(data []byte) {
-	select {
-	case <-c.quit:
-	case c.send <- data:
-	}
+// Start sets the websocket connection and starts reading and writing from that connection.
+func (c *Player) Start(room *Room, conn *websocket.Conn) {
+	c.conn = conn
+	c.room = room
+
+	go c.reader()
+	go c.writer()
 }
 
 func (c *Player) reader() {
@@ -82,17 +85,12 @@ func (c *Player) reader() {
 	}
 }
 
-func (c *Player) processIncoming(data []byte) {
-	// todo: process incoming messages from the server as a player.
-}
-
 func (c *Player) writer() {
-	defer func() {
-		close(c.quit)
-	}()
 
 	for {
 		select {
+		case <-c.quit:
+			return
 		case message, ok := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(_writeWait))
 			if !ok {

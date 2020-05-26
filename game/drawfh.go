@@ -8,11 +8,20 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/jeffbean/drawfh/game/client"
-
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/jeffbean/drawfh/game/lobby"
 )
+
+const (
+	_socketBufferSize  = 1024
+	_messageBufferSize = 256
+)
+
+var upgrader = &websocket.Upgrader{
+	ReadBufferSize:  _socketBufferSize,
+	WriteBufferSize: _messageBufferSize,
+}
 
 type DrawGame struct {
 	mu sync.RWMutex
@@ -29,10 +38,6 @@ func NewGameServer() DrawGame {
 	}
 }
 
-func (d *DrawGame) HomeHandler(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "Hello world v2!")
-}
-
 func (d *DrawGame) RoomCreate(w http.ResponseWriter, r *http.Request) {
 	// get the player who created this room
 	// make the room.
@@ -46,7 +51,7 @@ func (d *DrawGame) RoomCreate(w http.ResponseWriter, r *http.Request) {
 	d.rooms[room.ID] = &room
 	d.mu.Unlock()
 
-	go room.Run()
+	go room.Start()
 
 	log.Printf("")
 	// return http created and send url to room page.
@@ -72,17 +77,6 @@ func (d *DrawGame) RoomDetail(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (d *DrawGame) RoomDelete(w http.ResponseWriter, r *http.Request) {
-	roomID := "todo"
-
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	if _, ok := d.rooms[roomID]; ok {
-		delete(d.rooms, roomID)
-	}
-}
-
 func (d *DrawGame) RoomJoin(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	roomID, ok := params["id"]
@@ -96,9 +90,28 @@ func (d *DrawGame) RoomJoin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "room not found", http.StatusNotFound)
 		return
 	}
-	currentUser := client.NewPlayer("testing-user")
+
+	socket, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		http.Error(w, "connection upgrade failed", http.StatusInternalServerError)
+		return
+	}
+
+	currentUser := lobby.NewPlayer("testing-user")
+	currentUser.Start(room, socket)
 	room.PlayerJoin(currentUser)
 	io.WriteString(w, fmt.Sprintf("player %v joined room %v", currentUser, room.ID))
+}
+
+func (d *DrawGame) RoomDelete(w http.ResponseWriter, r *http.Request) {
+	roomID := "todo"
+
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if _, ok := d.rooms[roomID]; ok {
+		delete(d.rooms, roomID)
+	}
 }
 
 func (d *DrawGame) RoomList(w http.ResponseWriter, _ *http.Request) {
